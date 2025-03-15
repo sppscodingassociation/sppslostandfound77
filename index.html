@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPPS Lost & Found</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        header {
+            background-color: navy;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            z-index: 10;
+        }
+        header.hidden {
+            display: none;
+        }
+        header h1 {
+            margin: 0;
+        }
+        header .subtext {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .container {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 7rem;
+        }
+        #foundForm {
+            max-width: 400px;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+        .found-items {
+            flex-grow: 1;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 800px;
+        }
+        h2, .found-items h3 {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            color: #333;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.6rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            transition: all 0.3s ease;
+        }
+        button {
+            background-color: navy;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #003366;
+        }
+        .thumbnail-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 15px; /* ✅ Ensures space between image and button */
+        }
+        /* Compact and neat "Item Retrieved" button */
+        .retrieved-btn {
+            background-color: navy;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            width: fit-content;
+            min-width: 90px;
+            text-align: center;
+            margin-left: 15px; /* ✅ Adds space between image and button */
+        }
+        .retrieved-btn:hover {
+            background-color: #003366;
+        }
+
+        select, input:focus, textarea:focus, button:focus {
+            border-color: navy;
+            outline: none;
+        }
+        textarea, input[type="file"] {
+            width: 100%; /* Match width of other elements */
+            box-sizing: border-box;
+        }
+        textarea {
+            resize: none;
+        }
+        .filter-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .filter-section label {
+            font-size: 1rem;
+            color: #333;
+        }
+        .found-items .item {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .found-items .item:hover {
+            transform: scale(1.02);
+        }
+        .found-items .item .info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        /* Ensure all images are the same size */
+        .found-items .item img {
+            width: 120px;  /* Set a fixed width */
+            height: 120px; /* Set a fixed height */
+            object-fit: cover; /* Crop image to fill the box without stretching */
+            border-radius: 5px; /* Optional: Adds smooth edges */
+        }
+
+        .uploading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .uploading-img {
+            width: 100px; /* 🔹 Make the temporary image bigger */
+            height: 100px;
+            display: block;
+        }
+
+        .uploading-text {
+            font-size: 1.2rem; /* 🔹 Make the text more noticeable */
+            font-weight: bold;
+            color: gray;
+            margin-top: 5px;
+        }
+        .pagination {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .pagination a {
+            padding: 0.5rem 0.75rem;
+            margin: 0 0.25rem;
+            background-color: white;
+            color: navy;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .pagination a.active {
+            background-color: navy;
+            color: white;
+        }
+        .pagination a.nav-btn {
+            font-weight: bold;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 20;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal img {
+            max-width: 80%;
+            max-height: 80%;
+            border: none;
+            border-radius: 5px;
+        }
+        .modal .close {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+        }
+    /* ✅ For iPads & Larger Screens (Desktop, Landscape Tablets) */
+    @media (min-width: 768px) {
+    .container {
+        display: flex;
+        justify-content: center; /* Centers both sections */
+        gap: 2rem; /* Adds spacing between left and right boxes */
+        width: 90%; /* Prevents overflowing */
+        margin: auto; /* Centers the container */
+    }
+
+    #foundForm {
+        width: 40%; /* Make sure the form is not too wide */
+        min-width: 300px; /* Prevent it from shrinking too much */
+    }
+
+    .found-items {
+        width: 55%; /* Ensures found items are properly spaced */
+    }
+}
+
+/* ✅ For Portrait Mode (Tablets & Mobile) */
+@media (max-width: 1024px) and (orientation: portrait) {
+    .container {
+        flex-direction: column; /* Stack vertically */
+        align-items: center;
+    }
+
+    #foundForm, .found-items {
+        width: 90%; /* Make each section take up most of the screen width */
+        padding: 1rem; /* Reduce padding */
+    }
+
+    .retrieved-btn {
+        width: auto; /* Prevent button from stretching */
+        align-self: flex-start; /* Aligns left */
+    }
+}
+
+/* ✅ For Landscape Mode (Phones & Tablets turned sideways) */
+@media (max-width: 1024px) and (orientation: landscape) {
+    .container {
+        display: flex;
+        flex-direction: row; /* Place form & found items side by side */
+        justify-content: space-around;
+        align-items: flex-start;
+    }
+
+    #foundForm {
+        width: 45%; /* Form takes up 45% of space */
+    }
+
+    .found-items {
+        width: 50%; /* Found items take up 50% of space */
+    }
+
+    .retrieved-btn {
+        width: auto; /* Keep button from stretching */
+        align-self: flex-start; /* Align left */
+    }
+}
+
+/* ✅ Image Size and Cropping Adjustments */
+.found-items .item img {
+    width: 120px;  /* Set a standard width */
+    height: 120px; /* Set a standard height */
+    object-fit: cover; /* Ensures the image is cropped instead of stretched */
+    border-radius: 5px; /* Optional: Smooth edges */
+}
+
+/* ✅ Medium-sized Tablets (width under 768px) */
+@media (max-width: 768px) {
+    .found-items .item img {
+        width: 100px; /* Slightly smaller on tablets */
+        height: 100px;
+    }
+}
+
+/* ✅ Extra Small Devices (Phones under 480px) */
+/* Extra small devices (phones under 480px wide) */
+@media (max-width: 480px) {
+
+/* Ensure the container stacks properly */
+.container {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 0 10px;
+}
+
+/* Adjust filter layout: Apply Filter button below */
+.filter-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.filter-section button {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+/* Adjusting item card layout */
+.found-items .item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+}
+
+/* Ensure uniform spacing between all text components */
+.found-items .item p {
+    margin-bottom: 8px; /* Ensures even space between Category, Location, and Note */
+}
+
+/* Make images slightly bigger */
+.found-items .item img {
+    width: 80px;  
+    height: 80px;
+    object-fit: cover;
+    margin-top: 8px; /* Uniform spacing after Note */
+}
+
+/* ✅ Left-align Item Retrieved button */
+.retrieved-btn {
+    align-self: flex-start !important; /* Ensure it stays on the left */
+    width: auto;
+    font-size: 12px; /* Make button smaller */
+    padding: 6px 12px; /* Reduce padding */
+    margin-top: 8px; /* Consistent space after image */
+    margin-left: 0 !important; /* Remove any unintended margins */
+}
+}
+
+    </style>
+</head>
+<body>
+    <header id="header">
+        <h1>SPPS Lost & Found</h1>
+        <div class="subtext">Created by SPPS Coding Association</div>
+    </header>
+    <div class="container">
+        <div id="foundForm">
+          <p style="text-align: center; font-size: 0.8rem; color: #808080; margin-top: 1rem;">
+              Please bring any found item to the admin office for safekeeping
+          </p>
+            <h2>Report Found Item</h2>
+            <label for="category">Category:</label>
+            <select id="category">
+                <option value="Stationery">Stationery</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Books">Books</option>
+                <option value="Sports Equipment">Sports Equipment</option>
+                <option value="Accessories">Accessories</option>
+                <option value="Other">Other</option>
+            </select>
+            <label for="location">Location:</label>
+            <select id="location">
+                <option value="MB 1st Floor">MB 1st Floor</option>
+                <option value="MB 2nd Floor">MB 2nd Floor</option>
+                <option value="MB 3rd Floor">MB 3rd Floor</option>
+                <option value="NB 1st Floor">NB 1st Floor</option>
+                <option value="NB 2nd Floor">NB 2nd Floor</option>
+                <option value="NB 3rd Floor">NB 3rd Floor</option>
+                <option value="Assembly Hall">Assembly Hall</option>
+                <option value="Front Yard">Front Yard</option>
+                <option value="HS Terrace">HS Terrace</option>
+                <option value="MS Terrace">MS Terrace</option>
+                <option value="Gym">Gym</option>
+            </select>
+            <label for="photo">Upload Picture:</label>
+            <input type="file" id="photo">
+            <label for="note">Note:</label>
+            <textarea id="note"></textarea>
+            <button onclick="addFoundItem()">Add Found Item</button>
+        </div>
+        <div class="found-items">
+            <p style="text-align: center; font-size: 0.8rem; color: #808080; margin-bottom: 1rem;">
+                All listed items are available for pickup at the admin office
+            </p>
+            <h3>Found Items</h3>
+            <div class="filter-section">
+                <label>Filter:</label>
+                <select id="filterCategory">
+                    <option value="all">All Categories</option>
+                    <option value="Stationery">Stationery</option>
+                    <option value="Clothing">Clothing</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Books">Books</option>
+                    <option value="Sports Equipment">Sports Equipment</option>
+                    <option value="Accessories">Accessories</option>
+                    <option value="Other">Other</option>
+                </select>
+                <select id="filterLocation">
+                    <option value="all">All Locations</option>
+                    <option value="MB 1st Floor">MB 1st Floor</option>
+                    <option value="MB 2nd Floor">MB 2nd Floor</option>
+                    <option value="MB 3rd Floor">MB 3rd Floor</option>
+                    <option value="NB 1st Floor">NB 1st Floor</option>
+                    <option value="NB 2nd Floor">NB 2nd Floor</option>
+                    <option value="NB 3rd Floor">NB 3rd Floor</option>
+                    <option value="Assembly Hall">Assembly Hall</option>
+                    <option value="Front Yard">Front Yard</option>
+                    <option value="HS Terrace">HS Terrace</option>
+                    <option value="MS Terrace">MS Terrace</option>
+                    <option value="Gym">Gym</option>
+                </select>
+                <button onclick="applyFilter()">Apply Filter</button>
+            </div>
+            <div id="itemsContainer"></div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+        <div class="modal" id="imageModal">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <img id="modalImage">
+        </div>
+    </div>
+    <script type="module">
+    // 🔹 Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+
+    // 🔹 Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyBpE_nohego2NoPq7E3TM-6CsWpTTet050",
+        authDomain: "spps-lost-and-found-19126.firebaseapp.com",
+        databaseURL: "https://spps-lost-and-found-19126-default-rtdb.asia-southeast1.firebasedatabase.app",  // ✅ Correct region
+        projectId: "spps-lost-and-found-19126",
+        storageBucket: "spps-lost-and-found-19126.appspot.com",
+        messagingSenderId: "874376304354",
+        appId: "1:874376304354:web:41363b50eb8d653dc9b0bb"
+    };
+        
+    // 🔹 Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    console.log("🔥 Firebase Connected! Database Ready!");
+
+    let itemsPerPage = 5;
+    let currentPage = 1;
+
+    // 🔹 Function to Add a Lost Item to Firebase
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-storage.js";
+
+    const storage = getStorage(app); // ✅ Initialize Firebase Storage
+
+    function addFoundItem() {
+        const category = document.getElementById("category").value || "Unspecified";
+        const location = document.getElementById("location").value || "Unspecified";
+        const note = document.getElementById("note").value || "No note provided";
+        const fileInput = document.getElementById("photo");
+        const file = fileInput.files[0];
+
+        const confirmation = confirm("Add item to the list?");
+        if (!confirmation) return;
+
+        const tempItemKey = `temp-${Date.now()}`; // 🔹 Unique temporary key
+
+        const newItem = {
+            category,
+            location,
+            note,
+            timestamp: Date.now(),
+        };
+
+        console.log("📤 Sending temporary item to display:", newItem);
+        
+        // 🔹 Show the item immediately with a "loading" image
+        displayTemporaryItem(newItem, tempItemKey);
+
+        if (!file) {
+            console.log("⚠️ No image uploaded, saving item without an image...");
+
+            push(ref(database, "lost_items"), newItem)
+                .then(() => {
+                    console.log("✅ Item successfully added to Firebase (No image)", newItem);
+                    alert("Item added successfully!");
+                    document.getElementById("note").value = "";
+                })
+                .catch(error => {
+                    console.error("❌ Error adding item:", error);
+                    alert("Failed to add item. Check console for errors.");
+                });
+
+            return;
+        }
+
+        console.log("📸 File detected! Uploading to Cloudinary...");
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "unsigned_preset"); // Replace with your Cloudinary preset
+        formData.append("cloud_name", "di3nxayin"); // Replace with your Cloudinary Cloud Name
+
+        fetch("https://api.cloudinary.com/v1_1/di3nxayin/image/upload", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.secure_url) {
+                console.log("📸 Image uploaded successfully! URL:", data.secure_url);
+                newItem.imageURL = data.secure_url;
+
+                return push(ref(database, "lost_items"), newItem);
+            } else {
+                throw new Error("❌ Image upload failed.");
+            }
+        })
+        .then(() => {
+            console.log("✅ Item (with image) successfully added to Firebase!", newItem);
+            alert("Item added successfully!");
+            document.getElementById("note").value = "";
+            fileInput.value = "";
+            removeTemporaryItem(tempItemKey); // 🔹 Remove the temporary item
+        })
+        .catch(error => {
+            console.error("❌ Error uploading image or saving data:", error);
+            alert("Failed to upload image. Check console for errors.");
+        });
+    }
+
+    function displayItems(filteredItems = null) {
+        const container = document.getElementById("itemsContainer");
+        container.innerHTML = "";
+
+        console.log("📡 Fetching items from Firebase...");
+
+        const databaseRef = ref(database, "lost_items");
+
+        onValue(databaseRef, (snapshot) => {
+            container.innerHTML = ""; 
+
+            if (!snapshot.exists()) {
+                console.log("ℹ️ No items found in Firebase.");
+                container.innerHTML = "<p>No items found.</p>";
+                return;
+            }
+
+            console.log("✅ Items retrieved from Firebase!");
+
+            let itemsArray = [];
+            snapshot.forEach((childSnapshot) => {
+                let item = childSnapshot.val();
+                item.key = childSnapshot.key;
+                itemsArray.push(item);
+            });
+
+            itemsArray.reverse(); 
+
+            const displayList = filteredItems || itemsArray;
+            const paginatedItems = displayList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+            paginatedItems.forEach((item) => {
+                console.log("📝 Loading item:", item);
+
+                const itemContainer = document.createElement("div");
+                itemContainer.classList.add("item");
+
+                let imageHTML = "";
+                if (item.imageURL && typeof item.imageURL === "string" && item.imageURL.trim() !== "" && item.imageURL !== "null" && item.imageURL !== "undefined") {
+                    imageHTML = `<img src="${item.imageURL}" class="thumbnail-img" onclick="openModal('${item.imageURL}')">`;
+                } 
+
+                let itemHTML = `
+                    <div class='info'>
+                        <div><strong>Category:</strong> ${item.category || "Unspecified"}</div>
+                        <div><strong>Location:</strong> ${item.location || "Unspecified"}</div>
+                        <div><strong>Note:</strong> ${item.note || "No note provided"}</div>
+                    </div>
+                `;
+
+                if (imageHTML) {
+                    itemHTML += imageHTML; 
+                }
+
+                itemHTML += `<button class="retrieved-btn" onclick="deleteItem('${item.key}')">Item Retrieved</button>`;
+
+                itemContainer.innerHTML = itemHTML;
+                container.appendChild(itemContainer);
+            });
+
+            updatePagination(displayList);
+        });
+    }
+
+    function displayTemporaryItem(item, tempKey) {
+        const container = document.getElementById("itemsContainer");
+
+        const tempItemContainer = document.createElement("div");
+        tempItemContainer.classList.add("item");
+        tempItemContainer.id = tempKey; // Assign an ID for easy removal later
+
+        let imageHTML = `
+            <div class="uploading-container">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif" class="uploading-img">
+                <p class="uploading-text">Uploading...</p>
+            </div>
+        `;
+
+        tempItemContainer.innerHTML = `
+            <div class='info'>
+                <div><strong>Category:</strong> ${item.category || "Unspecified"}</div>
+                <div><strong>Location:</strong> ${item.location || "Unspecified"}</div>
+                <div><strong>Note:</strong> ${item.note || "No note provided"}</div>
+            </div>
+            ${imageHTML}
+            <button class="retrieved-btn" disabled>Uploading...</button>
+        `;
+
+        container.prepend(tempItemContainer); // 🔹 Show new items at the top
+    }
+
+
+    function removeTemporaryItem(tempKey) {
+        const tempItem = document.getElementById(tempKey);
+        if (tempItem) {
+            tempItem.remove(); // 🔹 Remove temporary item once the actual item is uploaded
+        }
+    }
+
+    //🔹 Function to Delete Items from Firebase
+    function deleteItem(itemKey) {
+        const code = prompt("Enter password to remove this item:");
+        if (code === "7865") {
+            remove(ref(database, "lost_items/" + itemKey))
+                .then(() => {
+                    alert("Item removed successfully.");
+                    displayItems(); // 🔹 Refresh without resetting pagination
+                })
+                .catch((error) => {
+                    console.error("❌ Error removing item:", error);
+                    alert("Failed to remove item.");
+                });
+        } else {
+            alert("Incorrect password. Item not removed.");
+        }
+    }
+
+    // 🔹 Pagination
+    function updatePagination(itemsList) {
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = ""; // Clear existing pagination
+
+        if (!itemsList || itemsList.length === 0) return; // No pagination needed if no items
+
+        const totalPages = Math.ceil(itemsList.length / itemsPerPage);
+        if (totalPages <= 1) return; // No need for pagination if only one page
+
+        if (currentPage > 1) {
+            const prevButton = document.createElement("a");
+            prevButton.innerText = "<";
+            prevButton.classList.add("nav-btn");
+            prevButton.onclick = () => changePage(-1, itemsList);
+            pagination.appendChild(prevButton);
+        }
+
+        for (let i = 1; i <= totalPages; i++) {
+            const pageButton = document.createElement("a");
+            pageButton.innerText = i;
+            if (i === currentPage) pageButton.classList.add("active");
+            pageButton.onclick = () => goToPage(i, itemsList);
+            pagination.appendChild(pageButton);
+        }
+
+        if (currentPage < totalPages) {
+            const nextButton = document.createElement("a");
+            nextButton.innerText = ">";
+            nextButton.classList.add("nav-btn");
+            nextButton.onclick = () => changePage(1, itemsList);
+            pagination.appendChild(nextButton);
+        }
+    }
+        function changePage(direction, itemsList) {
+        const totalPages = Math.ceil(itemsList.length / itemsPerPage);
+        currentPage += direction;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        displayItems(itemsList);
+    }
+
+    function goToPage(page, itemsList) {
+        currentPage = page;
+        displayItems(itemsList);
+    }
+
+
+    // 🔹 Filters
+    function applyFilter() {
+        const selectedCategory = document.getElementById("filterCategory").value;
+        const selectedLocation = document.getElementById("filterLocation").value;
+
+        console.log(`🔍 Applying Filter: Category - ${selectedCategory}, Location - ${selectedLocation}`);
+
+        onValue(ref(database, "lost_items"), (snapshot) => {
+            const container = document.getElementById("itemsContainer");
+            container.innerHTML = "";
+
+            if (!snapshot.exists()) {
+                console.log("ℹ️ No items found in Firebase.");
+                container.innerHTML = "<p>No items found.</p>";
+                return;
+            }
+
+            console.log("✅ Items retrieved for filtering!");
+
+            let itemsArray = [];
+            snapshot.forEach((childSnapshot) => {
+                let item = childSnapshot.val();
+                item.key = childSnapshot.key;
+                itemsArray.push(item);
+            });
+
+            itemsArray.reverse(); // Ensure newest items are at the top
+
+            // 🔹 Apply the selected filters
+            const filteredItems = itemsArray.filter(item => {
+                const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+                const matchesLocation = selectedLocation === "all" || item.location === selectedLocation;
+                return matchesCategory && matchesLocation;
+            });
+
+            if (filteredItems.length === 0) {
+                container.innerHTML = "<p>No matching items found.</p>";
+                return;
+            }
+
+            // 🔹 Reset pagination when filtering is applied
+            currentPage = 1;
+
+            // 🔹 Call displayItems with the filtered list
+            displayItems(filteredItems);
+        });
+    }
+
+
+
+    function displayFilteredItems(filteredItems) {
+        const container = document.getElementById("itemsContainer");
+        container.innerHTML = "";
+
+        filteredItems.forEach((item) => {
+            const itemContainer = document.createElement("div");
+            itemContainer.classList.add("item");
+
+            itemContainer.innerHTML = `
+                <div class='info'>
+                    <div><strong>Category:</strong> ${item.category}</div>
+                    <div><strong>Location:</strong> ${item.location}</div>
+                    <div><strong>Note:</strong> ${item.note}</div>
+                </div>
+                <button class="retrieved-btn" onclick="deleteItem('${item.key}')">Item Retrieved</button>
+            `;
+
+            container.appendChild(itemContainer);
+        });
+    }
+
+    // 🔹 Open/Close Image Modal
+    function openModal(src) {
+        document.getElementById("modalImage").src = src;
+        document.getElementById("imageModal").style.display = "flex";
+    }
+
+    function closeModal() {
+        document.getElementById("imageModal").style.display = "none";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        displayItems(); // 🔹 Load saved items immediately when the page loads
+    });
+
+
+    window.addFoundItem = addFoundItem;
+    window.deleteItem = deleteItem;
+    window.applyFilter = applyFilter;
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+</script>
+</body>
+</html>
